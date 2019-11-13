@@ -3,6 +3,7 @@ exports.up = function(knex) {
     table.increments();
     table.string("username");
     table.string("password");
+    table.string("department");
   });
 };
 

@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.post("/register", (req, res) => {
   const user = {
-    username: req.body.username,
+    ...req.body,
     password: bcrypt.hashSync(req.body.password, 10)
   };
   users
@@ -17,12 +17,15 @@ router.post("/register", (req, res) => {
 });
 
 router.post("/login", (req, res) => {
-  const { username, password, department } = req.body;
-  const token = generateToken({ username, department });
+  const { username, password } = req.body;
   users
     .getUser(username)
     .then(data => {
       if (bcrypt.compareSync(password, data.password)) {
+        const token = generateToken({
+          username: data.username,
+          department: data.department
+        });
         res
           .status(200)
           .json({ message: "Welcome, you're logged in!", token: token });
@@ -39,12 +42,16 @@ router.get("/users", (req, res) => {
     jwt.verify(
       token,
       "My secret string which I keep safe, not here!",
-      error => {
+      (error, decodedToken) => {
         if (error) {
           res.status(401).json({ message: error.message });
         } else {
           users
-            .getUsers()
+            .getUsers(
+              decodedToken.department
+                ? { department: decodedToken.department }
+                : {}
+            )
             .then(data => res.status(200).json(data))
             .catch(error => res.status(500).json({ message: error.message }));
         }
